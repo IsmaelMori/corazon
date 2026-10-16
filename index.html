@@ -1,0 +1,547 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mi universo ❤️</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;500&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #030207;
+    touch-action: none;
+    font-family: Poppins, sans-serif;
+}
+
+#universe {
+    position: fixed;
+    inset: 0;
+}
+
+canvas {
+    display: block;
+}
+
+#ui {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 20px 24px;
+    color: white;
+    text-align: center;
+}
+
+.heading {
+    font-size: 9px;
+    letter-spacing: 5px;
+    color: #e7a3cc;
+    text-shadow: 0 0 15px #ff4f91;
+}
+
+.bottom {
+    color: #d6b5d1;
+    font-size: 10px;
+    letter-spacing: 2px;
+    line-height: 2;
+    text-shadow: 0 0 12px #ff4f91;
+}
+
+#zoomLevel {
+    color: #ff9bc9;
+    font-size: 10px;
+}
+
+#message {
+    position: fixed;
+    left: 50%;
+    bottom: 80px;
+    transform: translateX(-50%);
+    z-index: 6;
+    width: min(310px, 85vw);
+    padding: 17px 20px;
+    background: rgba(10, 3, 15, .82);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 120, 190, .28);
+    border-radius: 16px;
+    color: white;
+    text-align: center;
+    opacity: 0;
+    transition: opacity .5s ease;
+    pointer-events: none;
+}
+
+#message.visible {
+    opacity: 1;
+}
+
+#message h2 {
+    font-family: 'Great Vibes', cursive;
+    font-size: 30px;
+    font-weight: 400;
+    color: #ffacd4;
+    margin-bottom: 7px;
+}
+
+#message p {
+    font-size: 11px;
+    line-height: 1.9;
+    color: #e0d2e3;
+}
+
+#message img {
+    width: 100%;
+    height: 115px;
+    object-fit: cover;
+    border-radius: 9px;
+    margin-bottom: 10px;
+}
+
+@media (max-width: 600px) {
+    #ui {
+        padding-top: 24px;
+        padding-bottom: 18px;
+    }
+
+    #message {
+        bottom: 65px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="universe"></div>
+
+<div id="ui">
+    <div class="heading">UN PEQUEÑO UNIVERSO PARA TI</div>
+
+    <div class="bottom">
+        ACÉRCATE Y DESCUBRE LO QUE GUARDA MI CORAZÓN
+        <div id="zoomLevel">DISTANCIA: 100%</div>
+    </div>
+</div>
+
+<div id="message">
+    <img id="messageImage" src="" alt="Recuerdo romántico">
+    <h2 id="messageTitle"></h2>
+    <p id="messageText"></p>
+</div>
+
+<script type="module">
+import * as THREE from
+'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
+
+const container = document.getElementById('universe');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x030207);
+scene.fog = new THREE.FogExp2(0x030207, 0.012);
+
+const camera = new THREE.PerspectiveCamera(
+    60,
+    innerWidth / innerHeight,
+    0.1,
+    1000
+);
+
+const START_DISTANCE = 23;
+const MIN_DISTANCE = 7;
+const MAX_DISTANCE = 42;
+
+let distance = START_DISTANCE;
+let targetDistance = START_DISTANCE;
+
+camera.position.set(0, 0, distance);
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: false
+});
+
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+container.appendChild(renderer.domElement);
+
+// Luces
+scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+
+const pinkLight = new THREE.PointLight(0xff1688, 180, 35);
+pinkLight.position.set(0, 2, 4);
+scene.add(pinkLight);
+
+const purpleLight = new THREE.PointLight(0x7825ff, 130, 40);
+purpleLight.position.set(-5, -3, -3);
+scene.add(purpleLight);
+
+// Grupo central
+const heartGroup = new THREE.Group();
+scene.add(heartGroup);
+
+// Forma de corazón hecha con geometría 3D
+const heartShape = new THREE.Shape();
+
+heartShape.moveTo(0, -0.8);
+heartShape.bezierCurveTo(-0.2, -0.3, -1.5, 0.5, -1.25, 1.25);
+heartShape.bezierCurveTo(-1.0, 2.0, -0.2, 1.8, 0, 1.1);
+heartShape.bezierCurveTo(0.2, 1.8, 1.0, 2.0, 1.25, 1.25);
+heartShape.bezierCurveTo(1.5, 0.5, 0.2, -0.3, 0, -0.8);
+
+const heartGeometry = new THREE.ExtrudeGeometry(heartShape, {
+    depth: 0.55,
+    bevelEnabled: true,
+    bevelSegments: 5,
+    steps: 2,
+    bevelSize: 0.12,
+    bevelThickness: 0.12,
+    curveSegments: 24
+});
+
+heartGeometry.center();
+
+const heartMaterial = new THREE.MeshStandardMaterial({
+    color: 0xff176c,
+    emissive: 0xff0755,
+    emissiveIntensity: 1.5,
+    metalness: 0.25,
+    roughness: 0.2
+});
+
+const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+heartGroup.add(heart);
+
+// Halo luminoso
+const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(2.1, 32, 32),
+    new THREE.MeshBasicMaterial({
+        color: 0xff2c92,
+        transparent: true,
+        opacity: 0.075,
+        side: THREE.BackSide
+    })
+);
+
+heartGroup.add(halo);
+
+// Estrellas
+const starCount = 1600;
+const starPositions = new Float32Array(starCount * 3);
+
+for (let i = 0; i < starCount; i++) {
+    starPositions[i * 3] = (Math.random() - 0.5) * 100;
+    starPositions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+    starPositions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+}
+
+const starGeometry = new THREE.BufferGeometry();
+starGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(starPositions, 3)
+);
+
+const stars = new THREE.Points(
+    starGeometry,
+    new THREE.PointsMaterial({
+        color: 0xffb9dc,
+        size: 0.065,
+        transparent: true,
+        opacity: 0.85
+    })
+);
+
+scene.add(stars);
+
+// Mensajes distribuidos alrededor del corazón
+const memories = [
+    {
+        title: 'Qué bonito coincidir contigo',
+        text: 'Entre tantas personas en este mundo, qué suerte la mía de haberte encontrado.',
+        image: './fotos/imagen1.jpg',
+        position: [-5, 2.7, -1]
+    },
+    {
+        title: 'Eres mi lugar favorito mi reina hermosa ❤️ ',
+        text: 'A veces, estar contigo convierte cualquier momento sencillo en algo especial.',
+        image: './fotos/imagen2.jpg',
+        position: [5, 2.5, -2]
+    },
+    {
+        title: 'Te amo con todo mi amor',
+        text: 'Quiero compartir tus sonrisas y también acompañarte cuando el día no sea tan bueno.',
+        image: './fotos/imagen3.jpg',
+        position: [-5, -3, -3]
+    },
+    {
+        title: 'Eres mi amor entero',
+        text: 'Hay personas que hacen más bonito el mundo sin siquiera darse cuenta. Tú eres una de ellas.',
+        image: './fotos/imagen4.jpg',
+        position: [5, -3, -1]
+    },
+    {
+        title: 'Un pensamiento bonito',
+        text: 'Si pudiera guardar un sentimiento en una estrella, guardaría todo el cariño que siento por ti.',
+        image: './fotos/imagen5.jpg',
+        position: [0, 5, -5]
+    },
+    {
+        title: 'Para ti es todo mi amor ',
+        text: 'No hace falta que todo sea perfecto. Para mí, los pequeños detalles también significan mucho.',
+        image: './fotos/imagen6.jpg',
+        position: [0, -5, -5]
+    }
+];
+
+// Tarjetas con imágenes dentro de la escena 3D
+const cards = [];
+const textureLoader = new THREE.TextureLoader();
+
+memories.forEach((memory, index) => {
+    const group = new THREE.Group();
+
+    group.position.set(...memory.position);
+
+    // Marco luminoso
+    const frame = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.2, 3.3),
+        new THREE.MeshBasicMaterial({
+            color: 0xff6ab0,
+            transparent: true,
+            opacity: 0.18,
+            side: THREE.DoubleSide
+        })
+    );
+
+    group.add(frame);
+
+    // Imagen en una tarjeta 3D
+    const imageMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.95,
+        side: THREE.DoubleSide
+    });
+
+    const imagePlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.9, 1.8),
+        imageMaterial
+    );
+
+    imagePlane.position.y = 0.45;
+    imagePlane.position.z = 0.025;
+    group.add(imagePlane);
+
+    textureLoader.load(
+        memory.image,
+        texture => {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            imageMaterial.map = texture;
+            imageMaterial.needsUpdate = true;
+        },
+        undefined,
+        () => {
+            imageMaterial.color.set(0x7c275c);
+        }
+    );
+
+    // Pequeño corazón decorativo
+    const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.09, 12, 12),
+        new THREE.MeshBasicMaterial({ color: 0xff8bc5 })
+    );
+
+    dot.position.set(0, -1.15, 0.05);
+    group.add(dot);
+
+    // Cada tarjeta mira hacia el centro de la escena
+    group.lookAt(0, 0, 0);
+
+    scene.add(group);
+
+    cards.push({
+        group,
+        imagePlane,
+        memory,
+        index
+    });
+});
+
+// Tarjetas: mostrar según la distancia
+const messageBox = document.getElementById('message');
+const messageTitle = document.getElementById('messageTitle');
+const messageText = document.getElementById('messageText');
+const messageImage = document.getElementById('messageImage');
+const zoomLabel = document.getElementById('zoomLevel');
+
+let selectedCard = -1;
+
+function updateMemories() {
+    // Cuanto más te acercas, más tarjetas se revelan.
+    const closeness =
+        (START_DISTANCE - distance) / (START_DISTANCE - MIN_DISTANCE);
+
+    cards.forEach((card, index) => {
+        const revealDistance = 18 - index * 1.5;
+        const visible = distance < revealDistance;
+
+        const targetOpacity = visible ? 1 : 0;
+
+        card.group.visible = targetOpacity > 0;
+
+        // Animación sutil de flotación
+        card.group.position.y =
+            card.memory.position[1] +
+            Math.sin(performance.now() * 0.001 + index) * 0.08;
+
+        // Tarjetas ligeramente más grandes al acercarse
+        const scale = visible
+            ? THREE.MathUtils.clamp(0.8 + closeness * 0.4, 0.8, 1.2)
+            : 0.001;
+
+        card.group.scale.setScalar(scale);
+    });
+
+    const percentage = Math.round(
+        (distance / START_DISTANCE) * 100
+    );
+
+    zoomLabel.textContent = `DISTANCIA: ${percentage}%`;
+
+    // Seleccionar el mensaje que corresponde al nivel de zoom.
+    const nextCard = Math.min(
+        memories.length - 1,
+        Math.max(0, Math.floor(closeness * memories.length))
+    );
+
+    if (distance < 18) {
+        if (selectedCard !== nextCard) {
+            selectedCard = nextCard;
+            const memory = memories[selectedCard];
+
+            messageTitle.textContent = memory.title;
+            messageText.textContent = memory.text;
+            messageImage.src = memory.image;
+            messageImage.alt = memory.title;
+
+            messageBox.classList.add('visible');
+        }
+    } else {
+        selectedCard = -1;
+        messageBox.classList.remove('visible');
+    }
+}
+
+// Zoom con rueda del mouse
+window.addEventListener('wheel', event => {
+    event.preventDefault();
+
+    targetDistance += event.deltaY * 0.018;
+
+    targetDistance = THREE.MathUtils.clamp(
+        targetDistance,
+        MIN_DISTANCE,
+        MAX_DISTANCE
+    );
+}, { passive: false });
+
+// Zoom con pellizco en celular
+let lastPinchDistance = null;
+
+function getTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+}
+
+window.addEventListener('touchstart', event => {
+    if (event.touches.length === 2) {
+        lastPinchDistance = getTouchDistance(event.touches);
+    }
+}, { passive: false });
+
+window.addEventListener('touchmove', event => {
+    if (event.touches.length === 2 && lastPinchDistance !== null) {
+        event.preventDefault();
+
+        const currentDistance = getTouchDistance(event.touches);
+        const difference = currentDistance - lastPinchDistance;
+
+        targetDistance -= difference * 0.035;
+
+        targetDistance = THREE.MathUtils.clamp(
+            targetDistance,
+            MIN_DISTANCE,
+            MAX_DISTANCE
+        );
+
+        lastPinchDistance = currentDistance;
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', event => {
+    if (event.touches.length < 2) {
+        lastPinchDistance = null;
+    }
+}, { passive: false });
+
+// Adaptación a la pantalla
+window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+
+// Animación principal
+const clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    const time = clock.getElapsedTime();
+
+    // Suavizar el zoom
+    distance += (targetDistance - distance) * 0.09;
+    camera.position.z = distance;
+
+    // Corazón giratorio y latido
+    heart.rotation.y = Math.sin(time * 0.5) * 0.18;
+    heart.rotation.x = Math.sin(time * 0.7) * 0.08;
+
+    const pulse = 1 + Math.sin(time * 3) * 0.045;
+    heartGroup.scale.setScalar(pulse);
+
+    halo.scale.setScalar(1 + Math.sin(time * 2) * 0.06);
+
+    // Movimiento de las estrellas
+    stars.rotation.y = time * 0.008;
+    stars.rotation.x = Math.sin(time * 0.1) * 0.025;
+
+    // Pequeña oscilación de la luz
+    pinkLight.intensity = 160 + Math.sin(time * 2) * 30;
+
+    updateMemories();
+
+    renderer.render(scene, camera);
+}
+
+animate();
+</script>
+
+</body>
+</html>
